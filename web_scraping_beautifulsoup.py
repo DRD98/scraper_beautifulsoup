@@ -1,35 +1,39 @@
 import environ
 import requests
 import pandas as pd
-from pathlib import Path
 from bs4 import BeautifulSoup
 
+from env_config import (
+    beautifulsoup_url,
+    header,
+    name_div,
+    product_div,
+    quantity_span_1,
+    quantity_span_2,
+    price_span,
+)
 
-BASE_DIR = Path(__file__).resolve().parent
-env = environ.Env()
-environ.Env.read_env(BASE_DIR / '.env')
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (compatible; MyScraper/1.0; +https://example.com/bot)"
+    "User-Agent": header
 }
 
-url = env('URL')
-response = requests.get(url, headers=headers)
+response = requests.get(beautifulsoup_url, headers=headers)
 soup = BeautifulSoup(response.content, "html.parser")
-products = soup.find_all("div", class_="SKUDeck___StyledDiv-sc-1e5d9gk-0 eA-dmzP")
+products = soup.find_all("div", class_ = product_div)
 
 product_data = []
 
 for product in products:
-    name_tag = product.find("div", class_="break-words")
+    name_tag = product.find("div", class_=name_div)
     name = name_tag.text.strip() if name_tag else "N/A"
 
-    qty_span = product.find("span", class_="PackChanger___StyledLabel-sc-newjpv-1")
+    qty_span = product.find("span", class_ = quantity_span_1)
     if not qty_span:
-        qty_span = product.find("span", class_="PackSelector___StyledLabel-sc-1lmu4hv-0")
+        qty_span = product.find("span", class_ = quantity_span_2)
     quantity = qty_span.text.strip() if qty_span else "N/A"
 
-    price_tag = product.find("span", class_="Pricing___StyledLabel-sc-pldi2d-1")
+    price_tag = product.find("span", class_ = price_span)
     price = price_tag.text.strip()[1:] if price_tag else "N/A"
 
     product_data.append({
@@ -38,7 +42,8 @@ for product in products:
         "Price": price
     })
     df = pd.DataFrame(product_data)
-    df.to_excel(r"C:\Work\Product_Data\product_list.xlsx", index=False)
+    df.sort_values("Name", inplace=True)
+    df.to_excel(r"C:\Work\Product_Data\product_list_beautifulsoup.xlsx", index=False)
     
 
 
